@@ -40,7 +40,7 @@ public class DeserializationHelper {
 		return constructor.newInstance(constructorValues);
 	}
 
-	private static Object getValueFrom(Class<?> classType, String value) {
+	public static Object getValueFrom(Class<?> classType, String value) {
 		if (classType == java.lang.Short.TYPE)
 			return Short.parseShort(value);
 		else if (classType == String.class)

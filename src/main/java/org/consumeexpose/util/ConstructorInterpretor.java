@@ -3,13 +3,14 @@ package org.consumeexpose.util;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
 
+import org.consumeexpose.annotations.Placeholder;
 import org.json.JSONObject;
 
 public class ConstructorInterpretor {
 	
 	public static JSONObject getConstructorPayloadFromClass(Class<?> className) {
-		Constructor<?>[] constructors = className.getConstructors();
-		if(constructors==null)
+		Constructor<?>[] constructors = className.getDeclaredConstructors();
+		if(constructors==null||constructors.length<1)
 			return null;
 		Constructor<?> constructor = getSuitableConstructor(constructors);
 		Parameter[] params = constructor.getParameters();
@@ -24,7 +25,7 @@ public class ConstructorInterpretor {
 				constructorInnerPayload.put(param.getName(), getConstructorPayloadFromClass(param.getType()));
 			}
 			else {
-				constructorInnerPayload.put(param.getName(), "");
+				constructorInnerPayload.put(param.getName(), getPlaceholder(param));
 			}
 		}
 		
@@ -58,5 +59,16 @@ public class ConstructorInterpretor {
 		
 		return constructors[constructorIndex];
 	}
+
+
+	private static String getPlaceholder(Parameter param) {
+		
+		String value = "";
+		if(param.isAnnotationPresent(Placeholder.class)) 
+			value = param.getAnnotation(Placeholder.class).value();
+	
+		return value;
+	}
+	
 
 }

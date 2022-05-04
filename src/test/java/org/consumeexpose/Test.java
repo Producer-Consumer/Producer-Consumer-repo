@@ -1,9 +1,5 @@
 package org.consumeexpose;
 
-import java.lang.reflect.InvocationTargetException;
-
-import org.consumeexpose.util.DeserializationException;
-import org.consumeexpose.util.DeserializationHelper;
 import org.json.JSONObject;
 
 public class Test {
@@ -12,8 +8,11 @@ public class Test {
 		
 		
 		Bootstrap bootstrapObj = new Bootstrap();
+		String cssPath = "/home/naveen/eclipse-workspace/Consumer-Producer/style.css";
+		bootstrapObj.setcssPath(cssPath);
 		try {
-			//bootstrapObj.run("org.consumeexpose");
+			bootstrapObj.run("org.consumeexpose");
+			//bootstrapObj.startServer();
 			//System.out.println("[echo]:Classes:"+ClassScanner.getClasses("org.consumeexpose"));
 			JSONObject payload = new JSONObject();
 			payload.put("number", "123");
@@ -23,9 +22,9 @@ public class Test {
 			innerPayload.put("identifier", "Brown");
 			payload.put("colorWay", innerPayload);
 			System.out.println("[echo]:Payload:"+payload);
-			Product product = (Product) DeserializationHelper.getInstantiedObjectOf(Product.class, payload);
-			System.out.println("[echo]:"+product);
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | DeserializationException e) {
+			//Product product = (Product) DeserializationHelper.getInstantiedObjectOf(Product.class, payload);
+			//System.out.println("[echo]:"+product);
+		} catch (IllegalArgumentException | ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

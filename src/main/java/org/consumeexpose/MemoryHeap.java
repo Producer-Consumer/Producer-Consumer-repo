@@ -6,6 +6,9 @@ import java.util.HashMap;
 
 import javax.servlet.http.HttpServlet;
 
+import org.consumeexpose.endpoint.DocumentationBuilder;
+import org.consumeexpose.endpoint.RESTfulService;
+
 public class MemoryHeap {
 
 	private static MemoryHeap INSTANCE;
@@ -13,15 +16,26 @@ public class MemoryHeap {
 	public ArrayList<Class<?>> allClasses ;
 	public ArrayList<Class<?>> consumers = new ArrayList<Class<?>>();
 	public ArrayList<Class<?>> producers = new ArrayList<Class<?>>();
-	public HashMap<String,HttpServlet> servlets = new HashMap<String,HttpServlet>();
+	public ArrayList<Class<?>> filters = new ArrayList<Class<?>>();
+	public ArrayList<Class<?>> responsePolicyClasses = new ArrayList<Class<?>>();
+	
+ 	public HashMap<String,HttpServlet> servlets = new HashMap<String,HttpServlet>();
+ 	
+ 	
 	
 	public ArrayList<Method> exposedMethods = new ArrayList<Method>();
 	public ArrayList<Method> staticMethods = new ArrayList<Method>();
-	public HashMap<String,String> methodPathAlias = new HashMap<String,String>();
+	public HashMap<Method,String> methodPathAlias = new HashMap<Method,String>();
 	public HashMap<Method,String> definedHttpMethods = new HashMap<Method,String>();
 	public HashMap<Method,String> preferredHttpMethods = new HashMap<Method,String>();
+	public HashMap<Integer,Class<?>> filtersDefinitions = new HashMap<Integer,Class<?>>();
+	public HashMap<String, HashMap<String,Integer>> responsePolicies = new HashMap<String,HashMap<String,Integer>>();//ClassName vs (Response Signature Vs Response Code)
 	
 	public boolean noconceal = false;
+	
+	public RESTfulService service;
+	
+	public DocumentationBuilder docBuilder;
 	
 	public void clearMethodsCache() {
 		exposedMethods.clear();
@@ -49,9 +63,11 @@ public class MemoryHeap {
 	@Override
 	public String toString() {
 		return "MemoryHeap [allClasses=" + allClasses + ", consumers=" + consumers + ", producers=" + producers
-				+ ", servlets=" + servlets + ", exposedMethods=" + exposedMethods + ", staticMethods=" + staticMethods
-				+ ", methodPathAlias=" + methodPathAlias + ", definedHttpMethods=" + definedHttpMethods
-				+ ", preferredHttpMethods=" + preferredHttpMethods + "]";
+				+ ", filters=" + filters + ", responsePolicyClasses=" + responsePolicyClasses + ", servlets=" + servlets
+				+ ", exposedMethods=" + exposedMethods + ", staticMethods=" + staticMethods + ", methodPathAlias="
+				+ methodPathAlias + ", definedHttpMethods=" + definedHttpMethods + ", preferredHttpMethods="
+				+ preferredHttpMethods + ", filtersDefinitions=" + filtersDefinitions + ", responsePolicies="
+				+ responsePolicies + ", noconceal=" + noconceal + "]";
 	}
 	
 	
