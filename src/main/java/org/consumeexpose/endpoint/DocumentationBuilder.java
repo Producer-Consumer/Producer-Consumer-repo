@@ -40,7 +40,7 @@ public class DocumentationBuilder {
 			outputStream.write(template.getBytes());
 			
 		} catch (IOException e) {
-			System.out.println("[echo]:Can't write content to file, as the file is not found/doesn't  have read/write permissions");
+			System.out.println("[echo]:Can't write content to file/open file, as the file is not found/doesn't  have read/write permissions");
 		}
 	}
 	
@@ -74,6 +74,7 @@ public class DocumentationBuilder {
 	
 	public void closeDocumentation() {
 		try {
+
 			String closing = "</body></html>";
 			this.outputStream.write(closing.getBytes());
 			this.outputStream.close();

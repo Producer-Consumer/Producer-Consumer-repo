@@ -130,8 +130,10 @@ public class PostServlet {
 					
 					methodArgs[paramIterator] = DeserializationHelper.getValueFrom(param.getType(), payload.getString(param.getName()));
 				}
-				else
+				else {
+					
 					methodArgs[paramIterator] = DeserializationHelper.getInstantiedObjectOf(param.getType(), payload.getJSONObject(param.getName()));
+				}
 				
 				//TODO null checks
 			}

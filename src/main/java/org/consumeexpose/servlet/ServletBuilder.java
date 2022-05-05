@@ -31,7 +31,7 @@ public class ServletBuilder {
 		
 		HashMap<Method,String> httpMethodDefs = heap.preferredHttpMethods;
 		
-		constructorPayload = ConstructorInterpretor.getConstructorPayloadFromClass(classDef);
+		constructorPayload = heap.constructorPayload;
 		
 		if(!heap.exposedMethods.isEmpty()) {
 			for(Method method: heap.exposedMethods) {
@@ -49,10 +49,9 @@ public class ServletBuilder {
 					restPath = getAliasFor(restPath);
 				}
 				
-				heap.service = new RESTfulService(httpMethodDef.getKey().getName(),restPath,httpMethodDef.getValue());
 				HttpServlet servlet = getServlet(classDef,httpMethodDef.getKey());
 				heap.servlets.put(restPath, servlet);
-				heap.docBuilder.writeService(heap.service.getHTMLString());
+
 			}
 			
 		}
@@ -77,7 +76,7 @@ public class ServletBuilder {
 		
 	}
 	
-	private static HashMap<String,Integer> loadAppropriateResponsePolicy(Class<?> classDef){
+	public static HashMap<String,Integer> loadAppropriateResponsePolicy(Class<?> classDef){
 		HashMap<String,Integer> responsePolicy = heap.responsePolicies.get(classDef.getName());
 		if(responsePolicy!=null)
 			return responsePolicy;
@@ -88,7 +87,7 @@ public class ServletBuilder {
 			
 	}
 
-	private static String getAliasFor(String className, String methodName) {
+	public static String getAliasFor(String className, String methodName) {
 
 		String alias = "";
 		className = className.replace(".", "/");
@@ -101,7 +100,7 @@ public class ServletBuilder {
 		return alias+methodName;
 	}
 	
-	private static String getAliasFor(String methodPathAlias) {
+	public static String getAliasFor(String methodPathAlias) {
 		String alias = "";
 		if(!methodPathAlias.startsWith(PATH_SEPARATOR))
 			alias = PATH_SEPARATOR+methodPathAlias;

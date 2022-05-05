@@ -67,6 +67,7 @@ public class Bootstrap {
 		ResponseHelper.determineResponsePolicies();
 		Tomcat tomcat = new Tomcat();
 		Context ctx = tomcat.addContext("/rest", new File(".").getAbsolutePath());
+		tomcat.setPort(8089);
 		int count = 0;
 		for (Class<?> classObj : heap.producers) {
 			if (classObj.isAnnotationPresent(NoConceal.class))
@@ -74,29 +75,26 @@ public class Bootstrap {
 			else
 				heap.noconceal = false;
 			JSONObject constructorPayload = ConstructorInterpretor.getConstructorPayloadFromClass(classObj);
+			heap.constructorPayload = constructorPayload;
 			System.out.println("[echo]:Payload->" + constructorPayload);
 			String restPath = getRestPathFromClass(classObj.getName());
 			if (classObj.isAnnotationPresent(Alias.class))
 				restPath = classObj.getAnnotation(Alias.class).path();
 			Method[] methods = classObj.getDeclaredMethods();
-			MethodsInterpretor.classifyMethods(methods);
-			
+			MethodsInterpretor.classifyMethods(classObj,methods);
 			
 			ServletBuilder.createServlets(classObj);
 			System.out.println("[echo]:" + heap);
-			
-			tomcat.setPort(8089);
+	
 
+		}
+		heap.docBuilder.closeDocumentation();
 		
 		
-			for(Map.Entry<String, HttpServlet> servlet : heap.servlets.entrySet()) {
-				Tomcat.addServlet(ctx, count+"", servlet.getValue());
-				ctx.addServletMappingDecoded(servlet.getKey()+"/*", count+"");
-				count++;
-			}
-
-			
-
+		for(Map.Entry<String, HttpServlet> servlet : heap.servlets.entrySet()) {
+			Tomcat.addServlet(ctx, count+"", servlet.getValue());
+			ctx.addServletMappingDecoded(servlet.getKey()+"/*", count+"");
+			count++;
 		}
 		
 		Context docCtx = tomcat.addContext("/documentation", new File(".").getAbsolutePath());

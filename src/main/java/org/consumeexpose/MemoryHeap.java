@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServlet;
 
 import org.consumeexpose.endpoint.DocumentationBuilder;
 import org.consumeexpose.endpoint.RESTfulService;
+import org.json.JSONObject;
 
 public class MemoryHeap {
 
@@ -36,6 +37,24 @@ public class MemoryHeap {
 	public RESTfulService service;
 	
 	public DocumentationBuilder docBuilder;
+	
+	public JSONObject constructorPayload;
+	
+	public String requestBody;
+	
+	public HashMap<String,String> queryParams;
+	public HashMap<String,String> responseHeaders;
+	public HashMap<String,String> requestHeaders;
+	public HashMap<Integer,String> response;
+	
+	public void clearDocumentationCache() {
+		responseHeaders = null;
+		requestHeaders = null;
+		response = null;
+		queryParams = null;
+		constructorPayload=null;
+		requestBody=null;
+	}
 	
 	public void clearMethodsCache() {
 		exposedMethods.clear();

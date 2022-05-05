@@ -3,7 +3,7 @@ package org.consumeexpose.util;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
-import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,6 +21,10 @@ import org.consumeexpose.annotations.Patch;
 import org.consumeexpose.annotations.Placeholder;
 import org.consumeexpose.annotations.Post;
 import org.consumeexpose.annotations.Put;
+import org.consumeexpose.endpoint.RESTfulService;
+import org.consumeexpose.response.Response;
+import org.consumeexpose.response.ResponseHelper;
+import org.consumeexpose.servlet.ServletBuilder;
 import org.json.JSONObject;
 
 public class MethodsInterpretor {
@@ -34,11 +38,16 @@ public class MethodsInterpretor {
 	private static final String PUT_METHOD_REGX = ".*update.*";
 	private static final String DELETE_METHOD_REGX = ".*((delete)|(remove)|(purge)|(close)).*";
 
-	public static void classifyMethods(Method[] methods) {
+	public static void classifyMethods(Class<?>classDef,Method[] methods) {
 
 		int modifier;
 		heap.clearMethodsCache();
+		
 		for (Method method : methods) {
+			heap.clearDocumentationCache();
+			
+			HashMap<String,Integer> responsePolicy = ServletBuilder.loadAppropriateResponsePolicy(classDef);
+			
 			if (method.isAnnotationPresent(Expose.class))
 				heap.exposedMethods.add(method);
 			modifier = method.getModifiers();
@@ -49,9 +58,61 @@ public class MethodsInterpretor {
 			String definedHttpMethod = extractDefinedHttpMethod(method);
 			if (definedHttpMethod != null)
 				heap.definedHttpMethods.put(method, definedHttpMethod);
+			
+			String restPath = ServletBuilder.getAliasFor(classDef.getName(),method.getName());
+			
+			if(heap.methodPathAlias.get(method)!=null) {
+				restPath = heap.methodPathAlias.get(method);
+				restPath = ServletBuilder.getAliasFor(restPath);
+			}
+			
 			heap.preferredHttpMethods.put(method, getPrefferedHttpMethod(method));
+			heap.service = new RESTfulService(method.getName(),restPath,heap.preferredHttpMethods.get(method));
+			Class<?> returnType = method.getReturnType();
+			Response[] responses = null;
+			if(returnType == java.lang.Void.TYPE)
+				responses = ResponseHelper.getPossibleVoidResponses(responsePolicy);
+			else if(returnType.isPrimitive()||returnType==String.class) {
+				responses = ResponseHelper.getPossiblePrimitiveResponses(returnType, responsePolicy);
+			}
+			else {
+				responses = ResponseHelper.getPossibleNonPrimitiveResponses(returnType, responsePolicy);
+			}
+			
+			HashMap<Integer,String> responsesMap = responseToHashMap(responses);
+			heap.response = responsesMap;
+			setRESTfulValues();
+			System.out.println("[echo]:Writing service:"+method.getName());
+			heap.docBuilder.writeService(heap.service.getHTMLString());
 		}
 
+	}
+	
+	private static HashMap<Integer,String> responseToHashMap(Response[] responses) {
+		if(responses==null||responses.length<1)
+			return null;
+		else {
+			HashMap<Integer,String> responseMap = new HashMap<Integer,String>();
+			for(Response response : responses) {
+				responseMap.put(response.getStatusCode(), response.getResponseBody());
+			}
+			return responseMap;
+		}
+	}
+	
+	private static void setRESTfulValues() {
+		if(heap.requestBody!=null)
+			heap.service.setBody(heap.requestBody);
+		if(heap.queryParams!=null) {
+	
+			heap.service.setQueryParams(heap.queryParams);
+		}
+		if(heap.requestHeaders!=null)
+			heap.service.setRequestHeaders(heap.requestHeaders);
+		if(heap.responseHeaders!=null)
+			heap.service.setResponseHeaders(heap.responseHeaders);
+		if(heap.response!=null)
+			heap.service.setResponse(heap.response);
 	}
 
 	private static String extractDefinedHttpMethod(Method method) {
@@ -80,24 +141,67 @@ public class MethodsInterpretor {
 		} else if (isMethodNameEligibleForDelete(method.getName())) {
 			
 			if (areNonPrimitivesPresent(params))
-				return POST;
+				return postProcessor(params);
 			else
 				return DELETE;
 
 		}
-		
-		if(params.length<2&&arePrimitivesOfGet(params))
-			return GET;
-		if(heap.noconceal&&arePrimitivesOfGet(params)) {
-			return GET;
+
+		if(((heap.noconceal||params.length<2)&&arePrimitivesOfGet(params))) {
+			
+			return getProcessor(params);
 		}
 		
+		
 		if(params.length==1&&arePrimitivesOfGet(params))
-			return GET;
+			return getProcessor(params);
 		else 
-			return POST;
+			return postProcessor(params);
 		
 
+	}
+	
+	private static String getProcessor(Parameter[] params) {
+		
+		if(params.length>0)
+			heap.queryParams = new HashMap<String,String>();
+		for(Parameter param : params) {
+			heap.queryParams.put(param.getName(), getPlaceholder(param));
+			
+		}
+		
+		return GET;
+	}
+	
+	private static String postProcessor(Parameter[] params) {
+		
+		JSONObject postPayload = new JSONObject();
+		if(heap.constructorPayload!=null) {
+		Iterator<String> keyIterator = heap.constructorPayload.keys();
+		String key = keyIterator.next();
+		if(key!=null) {
+			postPayload.put(key, heap.constructorPayload.getJSONObject(key));
+		}
+		}
+		for(Parameter param: params) {
+			if(isPrimitive(param)) {
+				postPayload.put(param.getName(), getPlaceholder(param));
+			}
+			else {
+				JSONObject paramJson = ConstructorInterpretor.getConstructorPayloadFromClass(param.getType());
+				if(paramJson!=null)
+					postPayload.put(param.getName(), paramJson.getJSONObject(param.getType().getSimpleName()));
+				else
+				{
+					System.out.println("[echo]:Warning:Expecting a valid constructor for param type:"+param.getType());
+				}
+			}
+				
+		}
+		
+		heap.requestBody = postPayload.toString(1);
+		
+		return POST;
 	}
 	
 	
@@ -181,15 +285,20 @@ public class MethodsInterpretor {
 
 	private static boolean arePrimitivesOfGet(Parameter[] params) {
 		
+		boolean marker = true;
 		for (Parameter param : params) {
 			Class<?> paramClass = param.getType();
 
-			if (paramClass == java.lang.Double.TYPE || paramClass == java.lang.Float.TYPE
-					|| paramClass == java.lang.Long.TYPE || paramClass == BigInteger.class|| paramClass == java.lang.Boolean.TYPE)
-				return false;
+			if(paramClass != java.lang.Integer.TYPE&&paramClass != java.lang.Boolean.TYPE&&paramClass != java.lang.Short.TYPE&&paramClass != java.lang.Character.TYPE)
+				marker = false;
+			/*
+			 * if (paramClass == java.lang.Double.TYPE || paramClass == java.lang.Float.TYPE
+			 * || paramClass == java.lang.Long.TYPE || paramClass == BigInteger.class||
+			 * paramClass == java.lang.Boolean.TYPE) return false;
+			 */
 		}
-		
-		return true;
+
+		return marker;
 	}
 	
 	public static JSONObject getParamPayload(Parameter[] params) {
@@ -217,6 +326,7 @@ public class MethodsInterpretor {
 		else
 			return false;
 	}
+	
 	
 
 	private static String getPlaceholder(Parameter param) {

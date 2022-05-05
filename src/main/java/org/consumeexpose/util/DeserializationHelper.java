@@ -13,6 +13,7 @@ public class DeserializationHelper {
 		
 		Constructor<?> constructor = ConstructorInterpretor.getSuitableConstructor(classDefinition.getConstructors());
 		Parameter[] params = constructor.getParameters();
+		
 		Object[] constructorValues = new Object[params.length];
 		Parameter param = null;
 		Class<?> classType = null;

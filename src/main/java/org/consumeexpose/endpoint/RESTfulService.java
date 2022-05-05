@@ -3,6 +3,8 @@ package org.consumeexpose.endpoint;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.json.JSONObject;
+
 public class RESTfulService {
 	
 	private static final String URL = "Url";
@@ -11,10 +13,7 @@ public class RESTfulService {
 	private static final String RESPONSE_HEADERS = "Response Headers";
 	private static final String REQUEST_BODY = "Request Body";
 	private static final String QUERY_PARAMS = "Query Params";
-	private static final String RESPONSE_BODIES = "Response Body/Bodies";
-	private static final String RESPONSE_BODY = "Response Body";
-	private static final String STATUS_CODE = "Status Code";
-	
+	private static final String RESPONSE_BODIES = "Response Body/Bodies";	
 	
 	private static final String TABLE_TD = "<td>";
 	private static final String TABLE_TD_C = "</td>";
@@ -24,6 +23,9 @@ public class RESTfulService {
 	private static final String TABLE_C = "</table>";
 	private static final String TABLE_CAPTION = "<caption>";
 	private static final String TABLE_CAPTION_C = "</caption>";
+	
+	private static final String PRE = "<pre>";
+	private static final String PRE_C = "</pre>";
 	
 	private String service;
 	private String url;
@@ -151,16 +153,16 @@ public class RESTfulService {
 			sb.append(TABLE_TR+TABLE_TD+REQUEST_HEADERS+TABLE_TD_C+TABLE_TD+getHashMapHTMLString(this.requestHeaders)+TABLE_TD_C+TABLE_TR_C);
 		}
 		if(this.body!=null) {
-			sb.append(TABLE_TR+TABLE_TD+REQUEST_BODY+TABLE_TD_C+TABLE_TD+this.body+TABLE_TD_C+TABLE_TR_C);
+			sb.append(TABLE_TR+TABLE_TD+REQUEST_BODY+TABLE_TD_C+TABLE_TD+PRE+this.body+PRE_C+TABLE_TD_C+TABLE_TR_C);
 		}
 		if(this.queryParams!=null) {
-			sb.append(TABLE_TR+TABLE_TD+QUERY_PARAMS+TABLE_TD_C+TABLE_TD+getHashMapHTMLString(this.queryParams)+TABLE_TD_C+TABLE_TR_C);
+			sb.append(TABLE_TR+TABLE_TD+QUERY_PARAMS+TABLE_TD_C+TABLE_TD+PRE+getHashMapHTMLString(this.queryParams)+PRE_C+TABLE_TD_C+TABLE_TR_C);
 		}
 		if(this.responseHeaders!=null) {
-			sb.append(TABLE_TR+TABLE_TD+RESPONSE_HEADERS+TABLE_TD_C+TABLE_TD+getHashMapHTMLString(this.responseHeaders)+TABLE_TD_C+TABLE_TR_C);
+			sb.append(TABLE_TR+TABLE_TD+RESPONSE_HEADERS+TABLE_TD_C+TABLE_TD+PRE+getHashMapHTMLString(this.responseHeaders)+PRE_C+TABLE_TD_C+TABLE_TR_C);
 		}
 		if(this.response!=null) {
-			sb.append(TABLE_TR+TABLE_TD+RESPONSE_BODIES+TABLE_TD_C+TABLE_TD+getResponseHTMLString(this.response)+TABLE_TD_C+TABLE_TR_C);
+			sb.append(TABLE_TR+TABLE_TD+RESPONSE_BODIES+TABLE_TD_C+TABLE_TD+PRE+getResponseHTMLString(this.response)+PRE_C+TABLE_TD_C+TABLE_TR_C);
 		}
 		
 		sb.append(TABLE_C);
@@ -170,24 +172,23 @@ public class RESTfulService {
 	
 	private static String getResponseHTMLString(HashMap<Integer,String> map) {
 
-		StringBuilder sb = new StringBuilder();
-		sb.append(TABLE_TR+TABLE_TD+STATUS_CODE+TABLE_TD_C+TABLE_TD+RESPONSE_BODY+TABLE_TD_C+TABLE_TR_C);
+		JSONObject payload = new JSONObject();
 		for(Map.Entry<Integer,String> entry : map.entrySet()) 
-			sb.append(TABLE_TR+TABLE_TD+entry.getKey()+TABLE_TD_C+TABLE_TD+entry.getValue()+TABLE_TD_C+TABLE_TR_C);
+			payload.put(entry.getKey()+"", new JSONObject(entry.getValue()));
 		
 		
-		return sb.toString();
+		return payload.toString(1);
 	}
 	 
 	private  static String getHashMapHTMLString(HashMap<String,String> map) {
 
-		StringBuilder sb = new StringBuilder();
+		JSONObject payload = new JSONObject();
+		for(Map.Entry<String,String> entry : map.entrySet()) {
+			
+			payload.put(entry.getKey(), entry.getValue());
+		}
 		
-		for(Map.Entry<String,String> entry : map.entrySet()) 
-			sb.append(TABLE_TR+TABLE_TD+entry.getKey()+TABLE_TD_C+TABLE_TD+entry.getValue()+TABLE_TD_C+TABLE_TR_C);
-		
-		
-		return sb.toString();
+		return payload.toString(1);
 	}
 
 	@Override
