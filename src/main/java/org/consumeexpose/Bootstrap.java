@@ -14,6 +14,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.descriptor.web.FilterDef;
+import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.consumeexpose.annotations.Alias;
 import org.consumeexpose.annotations.Consumer;
 import org.consumeexpose.annotations.FilterType;
@@ -88,8 +90,23 @@ public class Bootstrap {
 	
 
 		}
+		
 		heap.docBuilder.closeDocumentation();
 		
+		for(Map.Entry<Integer, Class<?>> filter : heap.filtersDefinitions.entrySet()) {
+			FilterDef filterDef = new FilterDef();
+			filterDef.setFilterName(filter.getValue().getSimpleName());
+			filterDef.setFilterClass(filter.getValue().getName());
+			ctx.addFilterDef(filterDef);
+			FilterMap filterMap = new FilterMap();
+			filterMap.setFilterName(filter.getValue().getSimpleName());
+			String path = "/*";
+			if(heap.filterPaths.get(filter.getValue())!=null)
+				path = heap.filterPaths.get(filter.getValue());
+			System.out.println("[echo]:Adding filter on path:"+path);
+			filterMap.addURLPattern(path);
+			ctx.addFilterMap(filterMap);
+		}
 		
 		for(Map.Entry<String, HttpServlet> servlet : heap.servlets.entrySet()) {
 			Tomcat.addServlet(ctx, count+"", servlet.getValue());
@@ -154,9 +171,11 @@ public class Bootstrap {
 		 * filterDef.setFilterName(SentinelControl.class.getSimpleName());
 		 * filterDef.setFilterClass(SentinelControl.class.getName());
 		 * 
-		 * ctx.addFilterDef(filterDef); FilterMap filterMap = new FilterMap();
+		 * ctx.addFilterDef(filterDef); 
+		 * FilterMap filterMap = new FilterMap();
 		 * filterMap.setFilterName(SentinelControl.class.getSimpleName());
-		 * filterMap.addURLPattern("/*"); ctx.addFilterMap(filterMap);
+		 * filterMap.addURLPattern("/*"); 
+		 * ctx.addFilterMap(filterMap);
 		 */
 		ctx.addServletMappingDecoded("/*", "Embedded");
 		

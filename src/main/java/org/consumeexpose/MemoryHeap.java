@@ -30,6 +30,7 @@ public class MemoryHeap {
 	public HashMap<Method,String> definedHttpMethods = new HashMap<Method,String>();
 	public HashMap<Method,String> preferredHttpMethods = new HashMap<Method,String>();
 	public HashMap<Integer,Class<?>> filtersDefinitions = new HashMap<Integer,Class<?>>();
+	public HashMap<Class<?>,String> filterPaths = new HashMap<Class<?>,String>();
 	public HashMap<String, HashMap<String,Integer>> responsePolicies = new HashMap<String,HashMap<String,Integer>>();//ClassName vs (Response Signature Vs Response Code)
 	
 	public boolean noconceal = false;

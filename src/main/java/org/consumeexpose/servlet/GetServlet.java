@@ -19,6 +19,8 @@ import org.consumeexpose.util.MethodsInterpretor;
 import org.json.JSONObject;
 
 public class GetServlet {
+	
+	public static final String METHOD_TYPE = MethodsInterpretor.GET;
 
 	public static HttpServlet createServlet(Class<?> classDef, Method method,HashMap<String, Integer> responsePolicy) {
 
@@ -45,41 +47,46 @@ public class GetServlet {
 
 					Class<?> returnType = method.getReturnType();
 
-					if (returnType == Response.class && returnValue != null) {
-						Response responseObject = (Response) returnValue;
-						response.setStatus(responseObject.getStatusCode());
+					Response formedResponse = ResponseHelper.getResponseFor(returnType, returnValue, METHOD_TYPE,
+							responsePolicy);
+					if (returnType != java.lang.Void.TYPE) {
+						response.setStatus(formedResponse.getStatusCode());
 						response.setContentType("application/json");
-						response.setContentLength(returnValue.toString().length());
-						response.getOutputStream().write(responseObject.getResponseBody().getBytes());
-					} else {
+						response.setContentLength(formedResponse.getResponseBody().length());
+						response.getOutputStream().write(formedResponse.getResponseBody().getBytes());
 
-						int responseCode = Util.getAppropriateResponseCode(returnValue, responsePolicy,
-								method.getReturnType(), MethodsInterpretor.GET);
-
-						if (returnValue != null) {
-							response.setStatus(responseCode);
-							response.setContentType("application/json");
-							response.setContentLength(returnValue.toString().length());
-							response.getOutputStream().write(returnValue.toString().getBytes());
-						} else {
-							response.setStatus(responseCode);
-						}
-
+					}
+					else {
+						response.setStatus(formedResponse.getStatusCode());
 					}
 
 				} catch (NullPointerException e) {
-					e.printStackTrace();
 					response.setStatus(400);
-					response.getOutputStream().write("Something went wrong from your side!".getBytes());
+					response.setContentType("application/json");
+					response.getOutputStream().write(ResponseHelper.getClientError().getBytes());
+				} catch (ArguementsException e) {
+					response.setStatus(400);
+					response.setContentType("application/json");
+					response.getOutputStream().write(ResponseHelper.getClientError().getBytes());
 				} catch (Exception e) {
-
+					Throwable cause = e.getCause();
+					if(cause!=null) {
 					Response responseObject = ResponseHelper.getExceptionResponse(e.getCause().getMessage());
 					if (responseObject == null) {
 						response.setStatus(500);
-						response.getOutputStream().write("Something went wrong!".getBytes());
+						response.setContentType("application/json");
+						response.getOutputStream().write(ResponseHelper.getInternalServerError().getBytes());
 					} else {
 						response.setStatus(responseObject.getStatusCode());
+						response.setContentType("application/json");
 						response.getOutputStream().write(responseObject.getResponseBody().getBytes());
+					}
+					}
+					else
+					{
+						response.setStatus(500);
+						response.setContentType("application/json");
+						response.getOutputStream().write(ResponseHelper.getInternalServerError().getBytes());
 					}
 				}
 
@@ -91,7 +98,7 @@ public class GetServlet {
 	}
 
 	private static Object[] constructMethodArgs(HttpServletRequest request, HttpServletResponse response,
-			HashMap<String, String> headers, Parameter[] parameters) {
+			HashMap<String, String> headers, Parameter[] parameters) throws ArguementsException{
 
 		Object[] methodArgs = new Object[parameters.length];
 		Parameter param = null;
@@ -120,6 +127,8 @@ public class GetServlet {
 					} else
 						methodArgs[paramIterator] = DeserializationHelper.getValueFrom(param.getType(), value);
 				}
+				else
+					throw new ArguementsException("Required Parameters are not found in query params");
 			}
 
 		}

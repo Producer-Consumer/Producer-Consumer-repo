@@ -22,6 +22,8 @@ import org.json.JSONObject;
 
 public class PostServlet {
 
+	public static final String METHOD_TYPE = MethodsInterpretor.POST;
+
 	public static HttpServlet createServlet(Class<?> classDef, Method method, HashMap<String, Integer> responsePolicy) {
 
 		Parameter[] params = method.getParameters();
@@ -42,59 +44,60 @@ public class PostServlet {
 				try {
 					JSONObject payload = getJsonBody(request);
 					JSONObject constructorPayload = null;
-					
+
 					try {
 						constructorPayload = payload.getJSONObject(classDef.getSimpleName());
 					} catch (JSONException e) {
-						System.out.println("[echo]:Constructor Payload not found for class:"+classDef.getSimpleName());
+						System.out
+								.println("[echo]:Constructor Payload not found for class:" + classDef.getSimpleName());
 						constructorPayload = new JSONObject();
 					}
-					
+
 					Object targetObject = DeserializationHelper.getInstantiedObjectOf(classDef, constructorPayload);
-					Object[] methodArgs = constructMethodArgs(request, response, headers, method.getParameters(),payload);
+					Object[] methodArgs = constructMethodArgs(request, response, headers, method.getParameters(),
+							payload);
 
 					Object returnValue = method.invoke(targetObject, methodArgs);
 
 					Class<?> returnType = method.getReturnType();
+					Response formedResponse = ResponseHelper.getResponseFor(returnType, returnValue, METHOD_TYPE,
+							responsePolicy);
 
-					if (returnType == Response.class && returnValue != null) {
-						Response responseObject = (Response) returnValue;
-						response.setStatus(responseObject.getStatusCode());
+					
+					if (returnType != java.lang.Void.TYPE) {
+						response.setStatus(formedResponse.getStatusCode());
 						response.setContentType("application/json");
-						response.setContentLength(returnValue.toString().length());
-						response.getOutputStream().write(responseObject.getResponseBody().getBytes());
-					} else {
-
-						int responseCode = Util.getAppropriateResponseCode(returnValue, responsePolicy,
-								method.getReturnType(), MethodsInterpretor.POST);
-
-						if (returnValue != null) {
-							response.setStatus(responseCode);
-							response.setContentType("application/json");
-							response.setContentLength(returnValue.toString().length());
-							response.getOutputStream().write(returnValue.toString().getBytes());
-						} else {
-							response.setStatus(responseCode);
-						}
+						response.setContentLength(formedResponse.getResponseBody().length());
+						response.getOutputStream().write(formedResponse.getResponseBody().getBytes());
 
 					}
-
-				} catch (NullPointerException e) {
+					else {
+						response.setStatus(formedResponse.getStatusCode());
+					}
 					
+				} catch (NullPointerException e) {
+
 					response.setStatus(400);
-					response.getOutputStream().write("Something went wrong from your side!".getBytes());
+					response.getOutputStream().write(ResponseHelper.getClientError().getBytes());
 				} catch (JSONException e) {
 					response.setStatus(400);
-					response.getOutputStream().write("{\"message\":\"Semantic error\"}".getBytes());
+					response.getOutputStream().write(ResponseHelper.getJSONError().getBytes());
 				} catch (Exception e) {
-
+					Throwable cause = e.getCause();
+					if(cause!=null) {
 					Response responseObject = ResponseHelper.getExceptionResponse(e.getCause().getMessage());
 					if (responseObject == null) {
 						response.setStatus(500);
-						response.getOutputStream().write("Something went wrong!".getBytes());
+						response.getOutputStream().write(ResponseHelper.getInternalServerError().getBytes());
 					} else {
 						response.setStatus(responseObject.getStatusCode());
 						response.getOutputStream().write(responseObject.getResponseBody().getBytes());
+					}
+					}
+					else
+					{
+						response.setStatus(500);
+						response.getOutputStream().write(ResponseHelper.getInternalServerError().getBytes());
 					}
 				}
 
@@ -106,11 +109,13 @@ public class PostServlet {
 	}
 
 	private static Object[] constructMethodArgs(HttpServletRequest request, HttpServletResponse response,
-			HashMap<String, String> headers, Parameter[] parameters,JSONObject payload) throws JSONException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, DeserializationException{
+			HashMap<String, String> headers, Parameter[] parameters, JSONObject payload)
+			throws JSONException, InstantiationException, IllegalAccessException, IllegalArgumentException,
+			InvocationTargetException, DeserializationException {
 
 		Object[] methodArgs = new Object[parameters.length];
 		Parameter param = null;
-		
+
 		for (int paramIterator = 0; paramIterator < parameters.length; paramIterator++) {
 			param = parameters[paramIterator];
 			if (param.getType() == HttpServletRequest.class) {
@@ -125,17 +130,18 @@ public class PostServlet {
 					methodArgs[paramIterator] = headers;
 				}
 			} else {
-				
-				if(MethodsInterpretor.isPrimitive(param)) {
-					
-					methodArgs[paramIterator] = DeserializationHelper.getValueFrom(param.getType(), payload.getString(param.getName()));
+
+				if (MethodsInterpretor.isPrimitive(param)) {
+
+					methodArgs[paramIterator] = DeserializationHelper.getValueFrom(param.getType(),
+							payload.getString(param.getName()));
+				} else {
+
+					methodArgs[paramIterator] = DeserializationHelper.getInstantiedObjectOf(param.getType(),
+							payload.getJSONObject(param.getName()));
 				}
-				else {
-					
-					methodArgs[paramIterator] = DeserializationHelper.getInstantiedObjectOf(param.getType(), payload.getJSONObject(param.getName()));
-				}
-				
-				//TODO null checks
+
+				// TODO null checks
 			}
 
 		}

@@ -13,7 +13,7 @@ public class RESTfulService {
 	private static final String RESPONSE_HEADERS = "Response Headers";
 	private static final String REQUEST_BODY = "Request Body";
 	private static final String QUERY_PARAMS = "Query Params";
-	private static final String RESPONSE_BODIES = "Response Body/Bodies";	
+	private static final String RESPONSE_BODIES = "Response Bodies";	
 	
 	private static final String TABLE_TD = "<td>";
 	private static final String TABLE_TD_C = "</td>";

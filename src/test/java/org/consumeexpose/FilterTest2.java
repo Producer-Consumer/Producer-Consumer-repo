@@ -12,7 +12,7 @@ import javax.servlet.ServletResponse;
 import org.consumeexpose.annotations.FilterType;
 
 
-@FilterType(order=2)
+@FilterType(order=2,path="/org/consumeexpose/About")
 public class FilterTest2 implements Filter{
 
 	@Override
@@ -24,8 +24,8 @@ public class FilterTest2 implements Filter{
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
-		// TODO Auto-generated method stub
-		
+		System.out.println("[echo]:Hello there , I am filtering!");
+		chain.doFilter(request, response);
 	}
 
 	@Override

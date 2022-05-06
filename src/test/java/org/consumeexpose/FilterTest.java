@@ -11,7 +11,7 @@ import javax.servlet.ServletResponse;
 
 import org.consumeexpose.annotations.FilterType;
 
-@FilterType(order=1)
+//@FilterType(order=1)
 public class FilterTest implements Filter{
 
 	@Override

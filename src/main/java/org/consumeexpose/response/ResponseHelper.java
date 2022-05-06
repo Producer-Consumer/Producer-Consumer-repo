@@ -13,6 +13,7 @@ import org.consumeexpose.annotations.ResponseCode;
 import org.consumeexpose.annotations.ResponsePolicy;
 import org.consumeexpose.annotations.VoidType;
 import org.consumeexpose.util.ConstructorInterpretor;
+import org.consumeexpose.util.MethodsInterpretor;
 import org.json.JSONObject;
 
 public class ResponseHelper {
@@ -37,12 +38,13 @@ public class ResponseHelper {
 
 	private static final String EXCEPTION_ERROR_REGX = "([0-9]{3})-(.*)";
 
-	private static final String TYPE = "type";
-	private static final String VALUE = "value";
-	private static final String ERROR = "error";
-	private static final String ERROR_MESSAGE = "Requested Resource is not Found/computed";
-	private static final String SERVER_ERROR = "Internal Server error";
-
+	public static final String TYPE = "type";
+	public static final String VALUE = "value";
+	public static final String ERROR = "error";
+	public static final String ERROR_MESSAGE = "Requested resource is not Found / computed";
+	public static final String SERVER_ERROR = "Internal Server error";
+	public static final String SEMANTIC_ERROR = "Semantic error";
+	public static final String CLIENT_ERROR = "Error from client side";
 	public static void determineResponsePolicies() {
 
 		String responseForClass = null;
@@ -114,6 +116,7 @@ public class ResponseHelper {
 		} else
 			return null;
 	}
+	
 
 	public static Response[] getPossiblePrimitiveResponses(Class<?> classDef,HashMap<String, Integer> responsePolicy) {
 
@@ -172,8 +175,9 @@ public class ResponseHelper {
 		responsesList[count] = responseObject;
 		count++;
 		
-		return (Response[]) responsesList;		
+		return  responsesList;		
 	}
+	
 	
 	public static Response[] getPossibleNonPrimitiveResponses(Class<?> classDef,HashMap<String, Integer> responsePolicy) {
 
@@ -217,6 +221,75 @@ public class ResponseHelper {
 		return (Response[]) responsesList;		
 	}
 	
+	
+	public static Response getResponseFor(Class<?> returnType, Object value, String methodType,HashMap<String,Integer> responsePolicy) {
+		
+		int code=0;
+		JSONObject jsonPayload = new JSONObject();
+		boolean valueIsNull = (value==null)?true:false;
+		if(returnType == java.lang.Void.TYPE) {
+
+			if(responsePolicy.get(VOID)!=null) {
+				return new Response(responsePolicy.get(VOID),null);
+			}
+			else {
+				if(methodType == MethodsInterpretor.GET)
+					return new Response(VOID_RESPONSE_CODE_GET,null);
+				else if(methodType == MethodsInterpretor.POST||methodType == MethodsInterpretor.PUT)//TODO patch?
+					return new Response(VOID_RESPONSE_CODE_POST,null);
+				else 
+					return new Response(VOID_RESPONSE_CODE_DELETE,null);
+			}
+				
+		}else if(returnType == Response.class) {
+			return (Response) value;
+		}else if(returnType.isPrimitive() || returnType == String.class) {
+			if(valueIsNull) {
+				jsonPayload.put(ERROR, ERROR_MESSAGE);
+				if(responsePolicy.get(NULL)!=null) {
+					code = responsePolicy.get(NULL);
+					return new Response(code,jsonPayload.toString());//TODO null value interpretation for String and primitives
+				}
+				else {
+					return new Response(NULL_RESPONSE_CODE,jsonPayload.toString());
+				}
+			}else {
+				jsonPayload.put(TYPE, returnType.getSimpleName());
+				jsonPayload.put(VALUE, value.toString());
+				return new Response(SUCCESS,jsonPayload.toString());
+			}
+			
+		}else {
+			if(valueIsNull) {
+				jsonPayload.put(ERROR, ERROR_MESSAGE);
+				return new Response(NULL_RESPONSE_CODE,jsonPayload.toString());
+			}
+			else {
+				jsonPayload.put(TYPE, returnType.getSimpleName());
+				jsonPayload.put(VALUE, value.toString());
+				return new Response(SUCCESS,jsonPayload.toString());
+			}
+		}
+
+	}
+	
+	public static String getInternalServerError() {
+		JSONObject payload = new JSONObject();
+		payload.put(ERROR, SERVER_ERROR);
+		return payload.toString();
+	}
+	
+	public static String getJSONError() {
+		JSONObject payload = new JSONObject();
+		payload.put(ERROR, SEMANTIC_ERROR);
+		return payload.toString();
+	}
+	
+	public static String getClientError() {
+		JSONObject payload = new JSONObject();
+		payload.put(ERROR, CLIENT_ERROR);
+		return payload.toString();
+	}
 	
 	
 

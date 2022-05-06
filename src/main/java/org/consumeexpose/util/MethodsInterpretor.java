@@ -81,6 +81,7 @@ public class MethodsInterpretor {
 			
 			HashMap<Integer,String> responsesMap = responseToHashMap(responses);
 			heap.response = responsesMap;
+			
 			setRESTfulValues();
 			System.out.println("[echo]:Writing service:"+method.getName());
 			heap.docBuilder.writeService(heap.service.getHTMLString());
