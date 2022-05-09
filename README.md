@@ -23,7 +23,7 @@ Following are the functionalities offered by **Producer-Consumer** framework:
 
 - [x] Producer annotations to expose RESTful endpoints
 - [x] Automatic documentation of exposed RESTful endpoints
-- [ ] Consumer annotations to consume RESTful endpoints ( Working in Progress) 
+- [ ] Consumer annotations to consume RESTful endpoints ( Work in Progress) 
 
 ### Requirements
 ------------------
@@ -37,6 +37,47 @@ The **Producer-Consumer** framework has following dependencies:
 
 Following list provides detailed information on each of the annotations defined in this framework to expose and consume a RESTful endpoint.
 
+#### Producer Annotations
+- **@Producer**
+  Annotation is used to mark a java class for automatic exposure of RESTful endpoints
+  - Target - Class
+  - Syntax
+    ```java
+    @Producer
+    public class TestClass {
+    
+    public void method1(){
+    
+    }
+    
+    public void method2(){
+    
+    }
+    
+    }
+    ```
+    
+- **@Expose**
+  Annotation is used to mark a public method in a java class to be explicity exposed as a RESTful endpoint. When *@Expose* is used, automatic exposure of all public methods inside a java class is disabled and methods which are annotated with *@Expose* are given priority and exposed as RESTful endpoints.
+  - Target - Method
+  - Syntax
+    ```java
+    @Producer
+    public class TestClass {
+    
+    @Expose
+    public void method1(){
+    
+    }
+    
+    public void method2(){
+    
+    }
+    
+    }
+    ```
+  - Exposed RESTful endpoints
+    - *method1* 
 
 
 ### Authors Information
