@@ -166,17 +166,7 @@ public class Bootstrap {
 			}
 		});
 		
-		/*
-		 * FilterDef filterDef = new FilterDef();
-		 * filterDef.setFilterName(SentinelControl.class.getSimpleName());
-		 * filterDef.setFilterClass(SentinelControl.class.getName());
-		 * 
-		 * ctx.addFilterDef(filterDef); 
-		 * FilterMap filterMap = new FilterMap();
-		 * filterMap.setFilterName(SentinelControl.class.getSimpleName());
-		 * filterMap.addURLPattern("/*"); 
-		 * ctx.addFilterMap(filterMap);
-		 */
+	
 		ctx.addServletMappingDecoded("/*", "Embedded");
 		
 
