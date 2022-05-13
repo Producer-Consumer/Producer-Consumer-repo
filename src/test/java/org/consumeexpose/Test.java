@@ -9,7 +9,7 @@ public class Test {
 		
 		Bootstrap bootstrapObj = new Bootstrap();
 		String cssPath = "/home/naveen/eclipse-workspace/Consumer-Producer/style.css";
-		bootstrapObj.setcssPath(cssPath);
+		//bootstrapObj.setcssPath(cssPath);
 		try {
 			bootstrapObj.run("org.consumeexpose");
 			//bootstrapObj.startServer();

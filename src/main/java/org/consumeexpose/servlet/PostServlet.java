@@ -31,9 +31,7 @@ public class PostServlet {
 
 		HttpServlet postServlet = new HttpServlet() {
 
-			/**
-			 * 
-			 */
+			
 			private static final long serialVersionUID = 1L;
 
 			@Override

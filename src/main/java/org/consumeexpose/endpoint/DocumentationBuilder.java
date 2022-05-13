@@ -19,6 +19,9 @@ public class DocumentationBuilder {
 	private FileOutputStream outputStream;
 	
 	private DocumentationBuilder() {
+	
+		ClassLoader classLoader = getClass().getClassLoader();
+		documentPath = classLoader.getResource("style.css").getFile();
 		System.out.println("[echo]:File:"+documentPath);
 		document = new File(documentPath);
 		try {
