@@ -34,8 +34,18 @@ public class ServletBuilder {
 		constructorPayload = heap.constructorPayload;
 		
 		if(!heap.exposedMethods.isEmpty()) {
+			System.out.println("[echo]:Exposing methods!");
 			for(Method method: heap.exposedMethods) {
 				//TODO
+				String restPath = getAliasFor(classDef.getName(),method.getName());
+				if(heap.methodPathAlias.get(method)!=null) {
+					restPath = heap.methodPathAlias.get(method);
+					restPath = getAliasFor(restPath);
+				}
+				
+				HttpServlet servlet = getServlet(classDef,method);
+				heap.servlets.put(restPath, servlet);
+				heap.docBuilder.writeService(heap.documentationCache.get(method).getHTMLString());
 			}
 		}
 		else {
@@ -51,7 +61,7 @@ public class ServletBuilder {
 				
 				HttpServlet servlet = getServlet(classDef,httpMethodDef.getKey());
 				heap.servlets.put(restPath, servlet);
-
+				heap.docBuilder.writeService(heap.documentationCache.get(httpMethodDef.getKey()).getHTMLString());
 			}
 			
 		}
@@ -70,6 +80,10 @@ public class ServletBuilder {
 			return GetServlet.createServlet(classDef, method,responsePolicy);
 		case MethodsInterpretor.POST:
 			return PostServlet.createServlet(classDef, method, responsePolicy);
+		case MethodsInterpretor.PUT:
+			return PutServlet.createServlet(classDef, method, responsePolicy);
+		case MethodsInterpretor.DELETE:
+			return DeleteServlet.createServlet(classDef, method, responsePolicy);
 			
 		}
 		return null;
