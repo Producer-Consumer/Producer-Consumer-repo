@@ -6,6 +6,7 @@
 - Introduction
 - Functionalities
 - Requirements
+- Assumptions and Rules
 - Framework Syntax
 - Authors Information
 
@@ -31,6 +32,21 @@ Following are the functionalities offered by **Producer-Consumer** framework:
 The **Producer-Consumer** framework has following dependencies:
 
 - Embedded tomcat
+
+### Assumptions and Rules
+
+Following assumptions and rules are considered during the initial development of this framework. Changes are always welcome, please write your best assumptions to authors!
+
+The assumptions are exclusively made on **Primitive** data types, **'String, char, int , short, long, float, decimal, boolean'**.
+
+#### GET Method rules:
+- There is a single parameter in the method signature.
+- The single parameter belongs to **'String, char, int, short'**.
+- Other than the above defined primitive types, if a method includes other parameter types which are not primitive and doesn't belong to above defined primitive types, the method is eligible for **POST** or **PUT** HTTP Method.
+- If **@NoConceal** annotation is used, more than one parameter is allowed in method signature and the method is eligible for **GET** HTTP Method.
+- If parameter is annotated with **@Headers**, then, that parameter is not accounted while resolving methods for an appropriate HTTP method. Hence, if a method includes a primitive **GET** type primitive parameter and a complex parameter annotated with **@Headers**, the complex parameter is not taken into account.
+
+
 
 ### Framework Syntax
 ----------------------
