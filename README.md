@@ -78,7 +78,9 @@ Following are the rules that control the Response policy of a given java method.
 - A **NullPointerException** is represented with **400** status code.
 - Any **RuntimeException** is represented with **500** status code.
 - All user defined exceptions which contains an error message in the format as shown below:
-"[error code] - [error message]"
+
+> "[error code] - [error message]"
+
 **error code** is a 3 digit number
 
 ### Framework Syntax
