@@ -38,7 +38,7 @@ public class MethodsInterpretor {
 	private static final String PUT_METHOD_REGX = ".*update.*";
 	private static final String DELETE_METHOD_REGX = ".*((delete)|(remove)|(purge)|(close)).*";
 
-	public static void classifyMethods(Class<?> classDef, Method[] methods) {
+	public static void classifyMethods(Class<?> classDef, Method[] methods,String classAlias) {
 
 		int modifier;
 		heap.clearMethodsCache();
@@ -59,7 +59,11 @@ public class MethodsInterpretor {
 			if (definedHttpMethod != null)
 				heap.definedHttpMethods.put(method, definedHttpMethod);
 
-			String restPath = ServletBuilder.getAliasFor(classDef.getName(), method.getName());
+			String restPath = null;
+			if(classAlias==null)
+				restPath = ServletBuilder.getAliasFor(classDef.getName(), method.getName());
+			else
+				restPath = ServletBuilder.getAliasFor(classAlias, method.getName());
 
 			if (heap.methodPathAlias.get(method) != null) {
 				restPath = heap.methodPathAlias.get(method);
@@ -334,11 +338,7 @@ public class MethodsInterpretor {
 			if (paramClass != java.lang.Integer.TYPE && paramClass != java.lang.Boolean.TYPE
 					&& paramClass != java.lang.Short.TYPE && paramClass != java.lang.Character.TYPE)
 				marker = false;
-			/*
-			 * if (paramClass == java.lang.Double.TYPE || paramClass == java.lang.Float.TYPE
-			 * || paramClass == java.lang.Long.TYPE || paramClass == BigInteger.class||
-			 * paramClass == java.lang.Boolean.TYPE) return false;
-			 */
+			
 		}
 
 		return marker;
@@ -377,5 +377,7 @@ public class MethodsInterpretor {
 
 		return value;
 	}
+	
+	
 
 }

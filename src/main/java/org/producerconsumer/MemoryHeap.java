@@ -9,6 +9,8 @@ import javax.servlet.http.HttpServlet;
 import org.json.JSONObject;
 import org.producerconsumer.endpoint.DocumentationBuilder;
 import org.producerconsumer.endpoint.RESTfulService;
+import org.producerconsumer.util.PolymorphicMethods;
+import org.producerconsumer.util.PolymorphicMethodsGroup;
 
 public class MemoryHeap {
 
@@ -33,7 +35,8 @@ public class MemoryHeap {
 	public HashMap<Class<?>,String> filterPaths = new HashMap<Class<?>,String>();
 	public HashMap<String, HashMap<String,Integer>> responsePolicies = new HashMap<String,HashMap<String,Integer>>();//ClassName vs (Response Signature Vs Response Code)
 	public HashMap<Method,RESTfulService> documentationCache = new HashMap<Method,RESTfulService>();
-	
+	public PolymorphicMethodsGroup polymorphicMethodsGroup;
+	public ArrayList<PolymorphicMethods> definedPolymorphicMethods = new ArrayList<PolymorphicMethods>();
 	
 	public boolean noconceal = false;
 	
@@ -55,17 +58,18 @@ public class MemoryHeap {
 		requestHeaders = null;
 		response = null;
 		queryParams = null;
-		constructorPayload=null;
 		requestBody=null;
 	}
 	
 	public void clearMethodsCache() {
+		System.out.println("[echo]:Clearing methods cache");
 		exposedMethods.clear();
 		staticMethods.clear();
 		methodPathAlias.clear();
 		definedHttpMethods.clear();
 		preferredHttpMethods.clear();
-		
+		polymorphicMethodsGroup = null;
+		definedPolymorphicMethods.clear();
 	}
 	
 	

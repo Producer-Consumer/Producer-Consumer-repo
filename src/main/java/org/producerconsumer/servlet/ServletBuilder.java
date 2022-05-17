@@ -6,12 +6,10 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServlet;
 
-import org.json.JSONObject;
 import org.producerconsumer.MemoryHeap;
-import org.producerconsumer.endpoint.RESTfulService;
 import org.producerconsumer.response.ResponseHelper;
-import org.producerconsumer.util.ConstructorInterpretor;
 import org.producerconsumer.util.MethodsInterpretor;
+import org.producerconsumer.util.PolymorphicMethods;
 
 public class ServletBuilder {
 
@@ -19,32 +17,38 @@ public class ServletBuilder {
 
 	private static MemoryHeap heap = MemoryHeap.getInstance();
 	
-	private static JSONObject constructorPayload;
 	
 	
 	
-	public static void createServlets(Class<?> classDef) {
+	
+	public static void createServlets(Class<?> classDef, String classPath) {
 
 		HashMap<String,Integer> responsePolicy = loadAppropriateResponsePolicy(classDef);
 		
-		boolean responsePolicyExists = (responsePolicy!=null)?true:false;
 		
 		HashMap<Method,String> httpMethodDefs = heap.preferredHttpMethods;
 		
-		constructorPayload = heap.constructorPayload;
+		
 		
 		if(!heap.exposedMethods.isEmpty()) {
 			System.out.println("[echo]:Exposing methods!");
 			for(Method method: heap.exposedMethods) {
 				//TODO
-				String restPath = getAliasFor(classDef.getName(),method.getName());
+				
+				String restPath = null;
+				if(classPath==null)
+					restPath = getAliasFor(classDef.getName(),method.getName());
+				else
+					restPath = getAliasFor(classPath,method.getName());
+				
 				if(heap.methodPathAlias.get(method)!=null) {
 					restPath = heap.methodPathAlias.get(method);
 					restPath = getAliasFor(restPath);
 				}
 				
 				HttpServlet servlet = getServlet(classDef,method);
-				heap.servlets.put(restPath, servlet);
+				if(servlet!=null)
+					heap.servlets.put(restPath, servlet);
 				heap.docBuilder.writeService(heap.documentationCache.get(method).getHTMLString());
 			}
 		}
@@ -52,7 +56,11 @@ public class ServletBuilder {
 			for(Map.Entry<Method,String> httpMethodDef : httpMethodDefs.entrySet()) {
 				
 				
-				String restPath = getAliasFor(classDef.getName(),httpMethodDef.getKey().getName());
+				String restPath = null;
+				if(classPath==null)
+					restPath = getAliasFor(classDef.getName(),httpMethodDef.getKey().getName());
+				else
+					restPath = getAliasFor(classPath,httpMethodDef.getKey().getName());
 				
 				if(heap.methodPathAlias.get(httpMethodDef.getKey())!=null) {
 					restPath = heap.methodPathAlias.get(httpMethodDef.getKey());
@@ -60,7 +68,8 @@ public class ServletBuilder {
 				}
 				
 				HttpServlet servlet = getServlet(classDef,httpMethodDef.getKey());
-				heap.servlets.put(restPath, servlet);
+				if(servlet!=null)
+					heap.servlets.put(restPath, servlet);
 				heap.docBuilder.writeService(heap.documentationCache.get(httpMethodDef.getKey()).getHTMLString());
 			}
 			
@@ -74,18 +83,25 @@ public class ServletBuilder {
 		
 		String prefferedHttpMethod = heap.preferredHttpMethods.get(method);
 		HashMap<String, Integer> responsePolicy = Util.loadAppropriateResponsePolicy(classDef);
+		PolymorphicMethods polymorphicMethods = getPolymorphicMethodsFor(method,prefferedHttpMethod);
+		if(heap.definedPolymorphicMethods.contains(polymorphicMethods))
+			return null;
+		else
+			heap.definedPolymorphicMethods.add(polymorphicMethods);
+		boolean polymorphicMethod = polymorphicMethods.getMethodsCount()>1?true:false;
 		
 		switch(prefferedHttpMethod) {
 		case MethodsInterpretor.GET:
-			return GetServlet.createServlet(classDef, method,responsePolicy);
+			return GetServlet.createServlet(classDef, polymorphicMethods,responsePolicy,polymorphicMethod);
 		case MethodsInterpretor.POST:
-			return PostServlet.createServlet(classDef, method, responsePolicy);
+			return PostServlet.createServlet(classDef, polymorphicMethods,responsePolicy,polymorphicMethod);
 		case MethodsInterpretor.PUT:
-			return PutServlet.createServlet(classDef, method, responsePolicy);
+			return PutServlet.createServlet(classDef, polymorphicMethods,responsePolicy,polymorphicMethod);
 		case MethodsInterpretor.DELETE:
-			return DeleteServlet.createServlet(classDef, method, responsePolicy);
+			return DeleteServlet.createServlet(classDef, polymorphicMethods,responsePolicy,polymorphicMethod);
 			
 		}
+		
 		return null;
 		
 	}
@@ -122,6 +138,14 @@ public class ServletBuilder {
 			alias = alias.substring(0,alias.length()-1);
 		
 		return alias;
+	}
+	
+	private static PolymorphicMethods getPolymorphicMethodsFor(Method method,String httpMethod) {
+		for(PolymorphicMethods polymorphicMethods: heap.polymorphicMethodsGroup) {
+			if(polymorphicMethods.getMethodName().equals(method.getName())&& httpMethod==polymorphicMethods.getHttpMethod())
+				return polymorphicMethods;
+		}
+		return null;
 	}
 
 }

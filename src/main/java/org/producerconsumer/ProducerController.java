@@ -1,16 +1,11 @@
 package org.producerconsumer;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.Writer;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Map;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
@@ -30,6 +25,7 @@ import org.producerconsumer.response.ResponseHelper;
 import org.producerconsumer.servlet.ServletBuilder;
 import org.producerconsumer.util.ClassScanner;
 import org.producerconsumer.util.ConstructorInterpretor;
+import org.producerconsumer.util.DynamicMethodDispatcher;
 import org.producerconsumer.util.FilterException;
 import org.producerconsumer.util.FilterHelper;
 import org.producerconsumer.util.MethodsInterpretor;
@@ -85,6 +81,7 @@ public class ProducerController {
 	}
 
 	private void extractServlets(){
+		
 		System.out.println("[echo]:Producers:" + heap.producers);
 		try {
 			FilterHelper.resolveFilters();
@@ -105,13 +102,15 @@ public class ProducerController {
 			JSONObject constructorPayload = ConstructorInterpretor.getConstructorPayloadFromClass(classObj);
 			heap.constructorPayload = constructorPayload;
 			System.out.println("[echo]:Payload->" + constructorPayload);
-			String restPath = getRestPathFromClass(classObj.getName());
+			String restPath = null;
 			if (classObj.isAnnotationPresent(Alias.class))
 				restPath = classObj.getAnnotation(Alias.class).path();
 			Method[] methods = classObj.getDeclaredMethods();
-			MethodsInterpretor.classifyMethods(classObj,methods);
-			
-			ServletBuilder.createServlets(classObj);
+			MethodsInterpretor.classifyMethods(classObj,methods,restPath);
+			DynamicMethodDispatcher dispatcher = new DynamicMethodDispatcher();
+			heap.polymorphicMethodsGroup = dispatcher.getOrganizedGroups();
+		
+			ServletBuilder.createServlets(classObj,restPath);
 			System.out.println("[echo]:" + heap);
 	
 
@@ -152,9 +151,7 @@ public class ProducerController {
 		tomcat.getServer().await();
 	}
 
-	private String getRestPathFromClass(String className) {
-		return className.replace(".", "/");
-	}
+	
 
 	private void classifyServices() {
 

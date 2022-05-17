@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -18,15 +19,28 @@ import org.producerconsumer.response.Response;
 import org.producerconsumer.response.ResponseHelper;
 import org.producerconsumer.util.DeserializationException;
 import org.producerconsumer.util.DeserializationHelper;
+import org.producerconsumer.util.DynamicMethodDispatcher;
 import org.producerconsumer.util.MethodsInterpretor;
+import org.producerconsumer.util.PolymorphicMethods;
 
 public class PutServlet {
 	
 
 	public static final String METHOD_TYPE = MethodsInterpretor.PUT;
 
-	public static HttpServlet createServlet(Class<?> classDef, Method method, HashMap<String, Integer> responsePolicy) {
-
+	public static HttpServlet createServlet(Class<?> classDef, PolymorphicMethods polymorphicMethods, HashMap<String, Integer> responsePolicy,boolean polymorphic) {
+		
+		if(polymorphic)
+			return getPolymorphicServlet(classDef,polymorphicMethods,responsePolicy);
+		else
+			return getNonPolymorphicServlet(classDef,polymorphicMethods,responsePolicy);
+		
+	}
+	
+	private static HttpServlet getNonPolymorphicServlet(Class<?> classDef, PolymorphicMethods polymorphicMethods, HashMap<String, Integer> responsePolicy) {
+		
+		Method method = polymorphicMethods.getMethods().get(0);
+		
 		Parameter[] params = method.getParameters();
 		params = MethodsInterpretor.removeHTTPDefinitions(params);
 
@@ -38,10 +52,11 @@ public class PutServlet {
 			@Override
 			protected void doPut(HttpServletRequest request, HttpServletResponse response)
 					throws ServletException, IOException {
-
+			
+				String requestBody = readRequestBody(request);
 				HashMap<String, String> headers = Util.getHttpHeader(request);
 				try {
-					JSONObject payload = getJsonBody(request);
+					JSONObject payload = getJsonBody(requestBody);
 					JSONObject constructorPayload = null;
 
 					try {
@@ -105,8 +120,100 @@ public class PutServlet {
 		};
 
 		return putServlet;
+		
 	}
+	
+	private static HttpServlet getPolymorphicServlet(Class<?> classDef, PolymorphicMethods polymorphicMethods, HashMap<String, Integer> responsePolicy) {
+		
+		
+		HttpServlet putServlet = new HttpServlet() {
 
+			
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			protected void doPut(HttpServletRequest request, HttpServletResponse response)
+					throws ServletException, IOException {
+				Map<String,String[]> headerMap = request.getParameterMap();
+				String requestBody = readRequestBody(request);
+				int requestParamCount = DynamicMethodDispatcher.getPossibleParameterCountFromRequest(headerMap,requestBody);
+				
+				HashMap<String, String> headers = Util.getHttpHeader(request);
+				try {
+					JSONObject payload = getJsonBody(requestBody);
+					JSONObject constructorPayload = null;
+
+					try {
+						constructorPayload = payload.getJSONObject(classDef.getSimpleName());
+						System.out.println("[echo]:Payload contains constructor data");
+						requestParamCount--;
+					} catch (JSONException e) {
+						System.out
+								.println("[echo]:Constructor Payload not found for class:" + classDef.getSimpleName());
+						constructorPayload = new JSONObject();
+					}
+					
+					Method method = DynamicMethodDispatcher.getSuitableMethodFrom(polymorphicMethods, requestParamCount);
+					
+					Object targetObject = DeserializationHelper.getInstantiedObjectOf(classDef, constructorPayload);
+					Object[] methodArgs = constructMethodArgs(request, response, headers, method.getParameters(),
+							payload);
+
+					Object returnValue = method.invoke(targetObject, methodArgs);
+
+					Class<?> returnType = method.getReturnType();
+					Response formedResponse = ResponseHelper.getResponseFor(returnType, returnValue, METHOD_TYPE,
+							responsePolicy);
+
+					
+					if (returnType != java.lang.Void.TYPE) {
+						response.setStatus(formedResponse.getStatusCode());
+						response.setContentType("application/json");
+						response.setContentLength(formedResponse.getResponseBody().length());
+						response.getOutputStream().write(formedResponse.getResponseBody().getBytes());
+
+					}
+					else {
+						response.setStatus(formedResponse.getStatusCode());
+					}
+					
+				} catch (NullPointerException e) {
+
+					response.setStatus(400);
+					response.getOutputStream().write(ResponseHelper.getClientError().getBytes());
+				} catch (JSONException e) {
+					
+					response.setStatus(400);
+					response.getOutputStream().write(ResponseHelper.getJSONError().getBytes());
+					e.printStackTrace();
+				} catch (Exception e) {
+					Throwable cause = e.getCause();
+					if(cause!=null) {
+					Response responseObject = ResponseHelper.getExceptionResponse(e.getCause().getMessage());
+					if (responseObject == null) {
+						response.setStatus(500);
+						response.getOutputStream().write(ResponseHelper.getInternalServerError().getBytes());
+					} else {
+						response.setStatus(responseObject.getStatusCode());
+						response.getOutputStream().write(responseObject.getResponseBody().getBytes());
+					}
+					}
+					else
+					{
+						response.setStatus(500);
+						response.getOutputStream().write(ResponseHelper.getInternalServerError().getBytes());
+					}
+				}
+
+			}
+
+		};
+
+		return putServlet;
+		
+	}
+	
+	
 	private static Object[] constructMethodArgs(HttpServletRequest request, HttpServletResponse response,
 			HashMap<String, String> headers, Parameter[] parameters, JSONObject payload)
 			throws JSONException, InstantiationException, IllegalAccessException, IllegalArgumentException,
@@ -148,12 +255,12 @@ public class PutServlet {
 		return methodArgs;
 	}
 
-	private static JSONObject getJsonBody(HttpServletRequest request) throws JSONException {
+	private static JSONObject getJsonBody(String requestString) throws JSONException {
 
-		String payload = readRequestBody(request);
+
 		JSONObject jsonPayload = null;
-		if (payload != null)
-			jsonPayload = new JSONObject(payload);
+		if (requestString != null&&requestString.length()>2)
+			jsonPayload = new JSONObject(requestString);
 
 		return jsonPayload;
 
