@@ -82,6 +82,8 @@ Following are the rules that control the Response policy of a given java method.
 > "[error code] - [error message]"
 
 **error code** is a 3 digit number
+> ex: 403 - Forbidden Access
+
 
 ### Framework Syntax
 ----------------------
