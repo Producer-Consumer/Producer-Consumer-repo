@@ -23,7 +23,7 @@ public class DocumentationBuilder {
 	
 		document = new File(documentPath);
 		try {
-			String style = "<style>"+readCssResouce()+"</style>";
+			String style = "<style>"+readCssResource()+"</style>";
 			
 			String template = "<!DOCTYPE html><html><head><title>RESTful Documentation</title>"+style+"</head><body>";
 			
@@ -99,7 +99,7 @@ public class DocumentationBuilder {
 		return new String(content);
 	}
 	
-	private String readCssResouce() {
+	private String readCssResource() {
 		ClassLoader classLoader = getClass().getClassLoader();
 		try {
 			InputStream inputStream = classLoader.getResource("style.css").openStream();
