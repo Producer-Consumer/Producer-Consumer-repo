@@ -37,7 +37,7 @@ The **Producer-Consumer** framework has following dependencies:
 JDK requirements:
 
 - Compiler compliance level is greater than **1.8**
-- enable store information about method parameters is enabled
+- enable store information about method parameters
 
 ### Assumptions and Rules
 ---------------------------
@@ -75,11 +75,11 @@ The rules given below determine preferred HTTP method for a given java method.
 Following are the rules that control the Response policy of a given java method.
 
 #### Implicit rules:
-- A **NullPointerException'** is represented with **400** status code.
+- A **NullPointerException** is represented with **400** status code.
 - Any **RuntimeException** is represented with **500** status code.
 - All user defined exceptions which contains an error message in the format as shown below:
-  "[error code] - [error message]"
-  **error code** is a 3 digit number
+"[error code] - [error message]"
+**error code** is a 3 digit number
 
 ### Framework Syntax
 ----------------------
